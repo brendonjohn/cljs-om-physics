@@ -1,0 +1,7 @@
+{
+    "name": "p2.js",
+    "options": {
+        "outdir" : "docs",
+        "paths" : ["./src/"]
+    }
+}

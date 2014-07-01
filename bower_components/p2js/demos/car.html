@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Car demo - p2.js physics engine</title>
+    <script src="../build/p2.js"></script>
+    <script src="js/jquery.js"></script>
+    <script src="js/pixi.js"></script>
+    <script src="js/Demo.js"></script>
+    <script src="js/PixiDemo.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <link href="css/demo.css" rel="stylesheet"/>
+    <link href="css/bootstrap.min.css" rel="stylesheet"/>
+    <meta name="description" content="How to make a simple box car with a motor.">
+</head>
+<body>
+    <script>
+
+        // Create a World
+        var world = new p2.World({
+            doProfiling:true,                    // Enable stats
+            gravity : [0,-10],                   // Set gravity to -10 in y direction
+            broadphase : new p2.SAPBroadphase(), // Broadphase algorithm
+        });
+
+        // Set high friction so the wheels don't slip
+        world.defaultContactMaterial.friction = 100;
+
+        // Create ground shape (plane)
+        var planeShape = new p2.Plane();
+
+        // Create a body for the ground
+        var planeBody = new p2.Body({
+            mass:0  // Mass == 0 makes the body static
+        });
+        planeBody.addShape(planeShape); // Add the shape to the body
+        world.addBody(planeBody);       // Add the body to the World
+
+        // Add circle bump in the center
+        var bumpShape = new p2.Circle(2); // Circle shape of radius 2
+        var bump = new p2.Body({
+            position:[0, -1] // Set initial position
+        });
+        bump.addShape(bumpShape);
+        world.addBody(bump);
+
+        // Create chassis for our car
+        var chassisBody = new p2.Body({
+            mass : 1,        // Setting mass > 0 makes it dynamic
+            position: [-4,1] // Initial position
+        });
+        var chassisShape = new p2.Rectangle(1,0.5);                     // Chassis shape is a rectangle
+        chassisBody.addShape(chassisShape);
+        world.addBody(chassisBody);
+
+        // Create wheels
+        var wheelBody1 = new p2.Body({ mass : 1, position:[chassisBody.position[0] - 0.5,0.7] }),
+            wheelBody2 = new p2.Body({ mass : 1, position:[chassisBody.position[0] + 0.5,0.7] }),
+            wheelShape = new p2.Circle(0.2);
+        wheelBody1.addShape(wheelShape);
+        wheelBody2.addShape(wheelShape);
+        world.addBody(wheelBody1);
+        world.addBody(wheelBody2);
+
+        // Constrain wheels to chassis with revolute constraints.
+        // Revolutes lets the connected bodies rotate around a shared point.
+        var localChassisPivot1 = [-0.5, -0.3];  // Where to hinge first wheel on the chassis
+        var localChassisPivot2 = [ 0.5, -0.3];  // Where to hinge second wheel on the chassis
+        var localWheelPivot = [0,0];            // Where the hinge is in the wheel (center)
+        var revoluteBack = new p2.RevoluteConstraint(chassisBody, localChassisPivot1, wheelBody1, localWheelPivot, {
+            collideConnected: false
+        });
+        var revoluteFront = new p2.RevoluteConstraint(chassisBody, localChassisPivot2, wheelBody2, localWheelPivot, {
+            collideConnected: false
+        });
+        world.addConstraint(revoluteBack);
+        world.addConstraint(revoluteFront);
+
+        // Enable the constraint motor for the back wheel
+        revoluteBack.enableMotor();
+        revoluteBack.setMotorSpeed(10); // Rotational speed in radians per second
+
+        var demo = new PixiDemo(world, {
+            lineWidth:1
+        });
+
+    </script>
+</body>
+</html>
